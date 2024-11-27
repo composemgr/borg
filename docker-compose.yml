@@ -1,0 +1,40 @@
+name: borg
+services:
+  borg:
+    image: borgwarehouse/borgwarehouse
+    container_name: borg
+    hostname: borg
+    ports:
+      - '2222:22'
+      - '172.17.0.1:59072:3000'
+    environment:
+      - FQDN=borg.${BASE_DOMAIN_NAME}
+      - NEXTAUTH_URL=https://borg.${BASE_DOMAIN_NAME}
+      - NEXTAUTH_SECRET=your-secret
+      - NEXT_TELEMETRY_DISABLED=1
+      - CRONJOB_KEY=your-other-secret
+      - MAIL_REJECT_SELFSIGNED_TLS=false
+      - MAIL_SMTP_PORT=${MAIL_SMTP_PORT:-25}
+      - MAIL_SMTP_HOST=${MAIL_SMTP_HOST:-172.17.0.1}
+      - MAIL_SMTP_FROM=${MAIL_SMTP_FROM:-no-reply@borg.$BASE_DOMAIN_NAME}
+    volumes:
+      - /etc/ssh:/etc/ssh
+      - /var/lib/srv/$USER/docker/borgwarehouse/borgwarehouse/latest/rootfs/config/ssh:/home/borgwarehouse/.ssh
+      - /var/lib/srv/$USER/docker/borgwarehouse/borgwarehouse/latest/rootfs/config/borg:/home/borgwarehouse/app/config
+      - /var/lib/srv/$USER/docker/borgwarehouse/borgwarehouse/latest/rootfs/data/borg:/home/borgwarehouse/repos
+      - /var/lib/srv/$USER/docker/borgwarehouse/borgwarehouse/latest/rootfs/data/logs/borg:/home/borgwarehouse/logs
+    networks:
+      - borg
+
+  notify:
+    image: caronc/apprise
+    container_name: apprise
+    hostname: apprise
+    user: 'www-data:www-data'
+    networks:
+      - borg
+
+networks:
+  borg:
+    name: borg
+    external: false
