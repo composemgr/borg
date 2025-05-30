@@ -11,7 +11,7 @@ services:
   app:
     image: borgwarehouse/borgwarehouse
     container_name: borg-app
-    hostname: borg-app
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
     pull_policy: always
     logging: *default-logging
@@ -30,11 +30,11 @@ services:
       - '2222:22'
       - '172.17.0.1:59072:3000'
     volumes:
-      - /etc/ssh:/etc/ssh
-      - /var/lib/srv/$USER/docker/borgwarehouse/borgwarehouse/latest/rootfs/config/ssh:/home/borgwarehouse/.ssh
-      - /var/lib/srv/$USER/docker/borgwarehouse/borgwarehouse/latest/rootfs/config/borg:/home/borgwarehouse/app/config
-      - /var/lib/srv/$USER/docker/borgwarehouse/borgwarehouse/latest/rootfs/data/borg:/home/borgwarehouse/repos
-      - /var/lib/srv/$USER/docker/borgwarehouse/borgwarehouse/latest/rootfs/data/logs/borg:/home/borgwarehouse/logs
+      - '/etc/ssh:/etc/ssh'
+      - '/var/lib/srv/$USER/docker/borgwarehouse/rootfs/config/ssh:/home/borgwarehouse/.ssh'
+      - '/var/lib/srv/$USER/docker/borgwarehouse/rootfs/config/borg:/home/borgwarehouse/app/config'
+      - '/var/lib/srv/$USER/docker/borgwarehouse/rootfs/data/borg:/home/borgwarehouse/repos'
+      - '/var/lib/srv/$USER/docker/borgwarehouse/rootfs/data/logs/borg:/home/borgwarehouse/logs'
     networks:
       - borg
 
