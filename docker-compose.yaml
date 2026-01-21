@@ -1,0 +1,57 @@
+# nginx proxy address - http://172.17.0.1:59072
+
+name: borg
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  app:
+    image: borgwarehouse/borgwarehouse:latest
+    container_name: borg-app
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    environment:
+      TZ: ${TZ:-America/New_York}
+      NEXT_TELEMETRY_DISABLED: 1
+      FQDN: ${BASE_HOST_NAME:-$HOSTNAME}
+      CRONJOB_KEY: ${APP_API_TOKEN:-changeme_cronjob_key_min_32_chars}
+      NEXTAUTH_URL: https://${BASE_HOST_NAME:-$HOSTNAME}
+      NEXTAUTH_SECRET: ${APP_SECRET_KEY:-changeme_nextauth_secret_min_32_chars}
+      MAIL_REJECT_SELFSIGNED_TLS: false
+      MAIL_SMTP_PORT: ${EMAIL_SERVER_PORT:-587}
+      MAIL_SMTP_HOST: ${EMAIL_SERVER_HOST:-172.17.0.1}
+      MAIL_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME}}}
+    ports:
+      - '2222:22'
+      - '172.17.0.1:59072:3000'
+    volumes:
+      - '/etc/ssh:/etc/ssh'
+      - './rootfs/config/ssh:/home/borgwarehouse/.ssh'
+      - './rootfs/config/borg:/home/borgwarehouse/app/config'
+      - './rootfs/data/borg:/home/borgwarehouse/repos'
+      - './rootfs/data/log/borg:/home/borgwarehouse/logs'
+    networks:
+      - borg
+
+  notify:
+    image: caronc/apprise:latest
+    container_name: borg-notify
+    hostname: borg-notify
+    restart: always
+    pull_policy: always
+    logging: *default-logging
+    user: 'www-data:www-data'
+    environment:
+      TZ: ${TZ:-America/New_York}
+    networks:
+      - borg
+
+networks:
+  borg:
+    name: borg
+    external: false
