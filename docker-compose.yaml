@@ -31,10 +31,10 @@ services:
       - '172.17.0.1:59072:3000'
     volumes:
       - '/etc/ssh:/etc/ssh'
-      - './rootfs/config/ssh:/home/borgwarehouse/.ssh'
-      - './rootfs/config/borg:/home/borgwarehouse/app/config'
-      - './rootfs/data/borg:/home/borgwarehouse/repos'
-      - './rootfs/data/log/borg:/home/borgwarehouse/logs'
+      - './volumes/config/ssh:/home/borgwarehouse/.ssh'
+      - './volumes/config/borg:/home/borgwarehouse/app/config'
+      - './volumes/data/borg:/home/borgwarehouse/repos'
+      - './volumes/data/log/borg:/home/borgwarehouse/logs'
     networks:
       - borg
 
