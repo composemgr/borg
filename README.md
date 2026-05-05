@@ -51,10 +51,10 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/config/ssh` - Data storage
-- `./rootfs/config/borg` - Data storage
-- `./rootfs/data/borg` - Data storage
-- `./rootfs/data/log/borg` - Data storage
+- `./volumes/config/ssh` - Data storage
+- `./volumes/config/borg` - Data storage
+- `./volumes/data/borg` - Data storage
+- `./volumes/data/log/borg` - Data storage
 
 ## 🔐 Security
 
