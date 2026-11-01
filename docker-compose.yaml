@@ -1,4 +1,4 @@
-# nginx proxy address - http://172.17.0.1:59072
+# nginx proxy address - http://172.17.0.1:64124
 
 name: borg
 x-logging: &default-logging
@@ -11,66 +11,36 @@ services:
   app:
     image: borgwarehouse/borgwarehouse:latest
     container_name: borg-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
     hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
     pull_policy: always
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: borg-app
       NEXT_TELEMETRY_DISABLED: 1
+      PUID: ${APP_RUN_AS:-1000}
+      PGID: ${APP_RUN_AS:-1000}
       FQDN: ${BASE_HOST_NAME:-$HOSTNAME}
-      CRONJOB_KEY: ${APP_API_TOKEN:-changeme_cronjob_key_min_32_chars}
-      NEXTAUTH_URL: https://${BASE_HOST_NAME:-$HOSTNAME}
-      NEXTAUTH_SECRET: ${APP_SECRET_KEY:-changeme_nextauth_secret_min_32_chars}
-      MAIL_REJECT_SELFSIGNED_TLS: false
+      BETTER_AUTH_URL: ${BORG_APP_URL:-https://${BASE_HOST_NAME:-$HOSTNAME}}
+      BETTER_AUTH_SECRET: ${APP_SECRET_KEY:-replace-with-a-random-secret-key}
+      CRONJOB_KEY: ${APP_API_TOKEN:-replace-with-a-random-32-char-key}
+      HIDE_SSH_PORT: ${HIDE_SSH_PORT:-true}
+      MAIL_REJECT_SELFSIGNED_TLS: ${EMAIL_SERVER_REJECT_SELF_SIGNED:-true}
       MAIL_SMTP_PORT: ${EMAIL_SERVER_PORT:-587}
       MAIL_SMTP_HOST: ${EMAIL_SERVER_HOST:-172.17.0.1}
-      MAIL_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME}}}
+      MAIL_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@${BASE_HOST_NAME:-$HOSTNAME}}
       MAIL_SMTP_LOGIN: ${EMAIL_SERVER_LOGIN_NAME:-}
       MAIL_SMTP_PWD: ${EMAIL_SERVER_LOGIN_PASS:-}
-      CONTAINER_NAME: borg-app
-      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     ports:
-      - '2222:22'
-      - '172.17.0.1:59072:3000'
+      - '172.17.0.1:64124:3000'
+      - '64901:22'
     volumes:
-      - '/etc/ssh:/etc/ssh'
-      - './volumes/config/ssh:/home/borgwarehouse/.ssh'
       - './volumes/config/borg:/home/borgwarehouse/app/config'
+      - './volumes/config/ssh:/home/borgwarehouse/.ssh'
+      - './volumes/config/ssh_host:/etc/ssh'
       - './volumes/data/borg:/home/borgwarehouse/repos'
-      - './volumes/data/log/borg:/home/borgwarehouse/logs'
-    networks:
-      - borg
-      - proxy
-      - cloudflare
-    labels:
-      - 'traefik.enable=true'
-      - 'cloudflare.enable=true'
-      - 'traefik.docker.network=proxy'
-      - 'cloudflare.service=http://borg-app:3000'
-      - 'cloudflare.hostname=borg.${CLOUDFLARE_ZONE_NAME:-}'
-      - 'traefik.http.routers.borg-app.entrypoints=http'
-      - 'traefik.http.routers.borg-app-secure.tls=true'
-      - 'traefik.http.routers.borg-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.middlewares.borg-app-https-redirect.redirectscheme.scheme=https'
-      - 'traefik.http.routers.borg-app.middlewares=borg-app-https-redirect'
-      - 'traefik.http.routers.borg-app-secure.entrypoints=https'
-      - 'traefik.http.routers.borg-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.routers.borg-app-secure.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.borg-app-secure.service=borg-app'
-      - 'traefik.http.services.borg-app.loadbalancer.server.port=3000'
-
-  notify:
-    image: caronc/apprise:latest
-    container_name: borg-notify
-    hostname: borg-notify
-    restart: always
-    pull_policy: always
-    logging: *default-logging
-    user: 'www-data:www-data'
-    environment:
-      TZ: ${TZ:-America/New_York}
-      CONTAINER_NAME: borg-notify
     networks:
       - borg
 
@@ -78,7 +48,3 @@ networks:
   borg:
     name: borg
     external: false
-  proxy:
-    external: true
-  cloudflare:
-    external: true

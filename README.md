@@ -1,15 +1,17 @@
 ## 👋 Welcome to borg 🚀
 
-Deduplicating backup program with compression and encryption
+BorgWarehouse web UI for managing deduplicated Borg backups
 
 ## 📋 Description
 
-Deduplicating backup program with compression and encryption
+BorgWarehouse is a web interface for creating and managing BorgBackup
+repositories. It exposes the web UI on the host docker bridge and an SSH
+endpoint for Borg clients. Repositories, configuration, SSH keys and the host
+SSH key directory are bind-mounted under `./volumes`.
 
 ## 🚀 Services
 
-- **app**: borgwarehouse/borgwarehouse:latest
-- **notify**: caronc/apprise:latest
+- **app**: borgwarehouse/borgwarehouse:latest - web UI and Borg SSH server
 
 ## 📦 Installation
 
@@ -22,7 +24,8 @@ curl -q -LSsf "https://raw.githubusercontent.com/composemgr/borg/main/docker-com
 ```bash
 git clone "https://github.com/composemgr/borg" ~/.local/srv/docker/borg
 cd ~/.local/srv/docker/borg
-docker compose up -d
+cp default.env .env
+docker compose --env-file .env up -d
 ```
 
 ### Option 3: Using composemgr
@@ -36,63 +39,109 @@ composemgr install borg
 
 ```shell
 TZ=America/New_York
-APP_API_TOKEN=changeme_cronjob_key_min_32_chars
-APP_SECRET_KEY=changeme_nextauth_secret_min_32_chars
+BASE_HOST_NAME=borg.example.com
+BORG_APP_URL=https://borg.example.com
+APP_RUN_AS=1000
+APP_API_TOKEN=replace-with-a-random-32-char-key
+APP_SECRET_KEY=replace-with-a-random-secret-key
 EMAIL_SERVER_PORT=587
 EMAIL_SERVER_HOST=172.17.0.1
-EMAIL_SERVER_MAIL_FROM=no-reply@${BASE_DOMAIN_NAME:-${BASE_HOST_NAME
 ```
 
 See `docker-compose.yaml` for complete list of configurable options.
 
+### Environment Files
+
+`default.env.sample` holds the full set of variables and is copied to `.env`
+before starting the stack:
+
+```bash
+cp default.env .env
+docker compose --env-file .env up -d
+```
+
+`app.env.sample` holds the app-specific overrides and is copied to `app.env`:
+
+```bash
+cp app.env.sample app.env
+```
+
+`composemgr up` applies `app.env` and `default.env` automatically. Raw
+`docker compose` commands need `--env-file .env` to pick up the same values.
+
+### Reverse Proxy
+
+Three standalone compose files ship in this repo:
+
+| File | Use |
+|------|-----|
+| `docker-compose.yaml` | Default, web UI on `172.17.0.1:64124`, SSH on host port `64901` |
+| `docker-compose.traefik.yaml` | Behind an existing external `traefik` network |
+| `docker-compose.tunnel.yaml` | Behind an existing external `cloudflare` tunnel network |
+
+```bash
+docker compose -f docker-compose.traefik.yaml --env-file .env up -d
+```
+
+Only the `app` service carries the proxy labels and joins the external
+network. The proxy variants publish no host ports; the SSH service remains
+reachable on the internal container network for Borg clients that use the
+same network or an explicit TCP proxy.
+
 ## 🌐 Access
 
-- **Web Interface**: http://172.17.0.1:59072
+- **Web Interface**: http://172.17.0.1:64124
+- **Borg SSH**: ssh://{host}:64901
+
+Complete the first-run setup in the web UI, then create repositories and
+users there. The app's `APP_RUN_AS` UID/GID must own the mounted directories.
 
 ## 📂 Volumes
 
-- `./volumes/config/ssh` - Data storage
-- `./volumes/config/borg` - Data storage
-- `./volumes/data/borg` - Data storage
-- `./volumes/data/log/borg` - Data storage
+- `./volumes/config/borg` - BorgWarehouse application configuration
+- `./volumes/config/ssh` - Authorized client SSH keys
+- `./volumes/config/ssh_host` - SSH host keys
+- `./volumes/data/borg` - Borg repositories
 
 ## 🔐 Security
 
-- Change all default passwords before deploying to production
-- Use strong secrets for all authentication tokens
-- Configure HTTPS using a reverse proxy (nginx, traefik, caddy)
+- Set unique `APP_SECRET_KEY` and `APP_API_TOKEN` values before deployment
+- `APP_RUN_AS` must be non-root and own all mounted directories
+- Protect the SSH host key and repository directories with regular backups
+- Use HTTPS via the reverse proxy in production
 - Regularly update Docker images for security patches
-- Backup your data regularly
+- Do not expose Borg SSH publicly without firewall rules and key-only access
 
 ## 🔍 Logging
 
 ```shell
-docker compose logs -f app
+docker compose --env-file .env logs -f app
 ```
 
 ## 🛠️ Management
 
 ```bash
 # Start services
-docker compose up -d
+docker compose --env-file .env up -d
 
 # Stop services
-docker compose down
+docker compose --env-file .env down
 
 # Update to latest images
-docker compose pull && docker compose up -d
+docker compose --env-file .env pull && docker compose --env-file .env up -d
 
 # View logs
-docker compose logs -f
+docker compose --env-file .env logs -f
 
 # Restart services
-docker compose restart
+docker compose --env-file .env restart
 ```
 
 ## 📋 Requirements
 
 - Docker Engine 20.10+
 - Docker Compose V2+
+- A non-root host UID/GID for the mounted data directories
 
 ## 🤝 Author
 
