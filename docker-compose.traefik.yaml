@@ -31,6 +31,8 @@ services:
       MAIL_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@${BASE_HOST_NAME:-$HOSTNAME}}
       MAIL_SMTP_LOGIN: ${EMAIL_SERVER_LOGIN_NAME:-}
       MAIL_SMTP_PWD: ${EMAIL_SERVER_LOGIN_PASS:-}
+    ports:
+      - '64901:22'
     volumes:
       - './volumes/config/borg:/home/borgwarehouse/app/config'
       - './volumes/config/ssh:/home/borgwarehouse/.ssh'
