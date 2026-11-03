@@ -31,6 +31,12 @@ services:
       MAIL_SMTP_FROM: ${EMAIL_SERVER_MAIL_FROM:-no-reply@${BASE_HOST_NAME:-$HOSTNAME}}
       MAIL_SMTP_LOGIN: ${EMAIL_SERVER_LOGIN_NAME:-}
       MAIL_SMTP_PWD: ${EMAIL_SERVER_LOGIN_PASS:-}
+    healthcheck:
+      test: ['CMD', 'curl', '-s', '-o', '/dev/null', '--max-time', '5', 'http://127.0.0.1:3000/']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     ports:
       - '64901:22'
     volumes:
